@@ -1,24 +1,22 @@
-import { isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { inject, Injectable, makeStateKey, PLATFORM_ID, TransferState } from '@angular/core';
-
-import { User } from './model/user';
 import { catchError, map, Observable, of } from 'rxjs';
+import { Character, CharactersResponse } from './model/character';
 import { HttpClient } from '@angular/common/http';
-import { response } from 'express';
+import { isPlatformBrowser } from '@angular/common';
 
 @Injectable({
   providedIn: 'root'
 })
-export class ServicioService {
-
-  
+export class DragonballService {
 
   private platformId = inject(PLATFORM_ID);
   private transferState = inject(TransferState);
   private http = inject(HttpClient);
+  
+  private apiUrl = 'https://dragonball-api.com/api/characters';
 
-  getUsers(): Observable<User[]> {
-    const stateKey = makeStateKey<User[]>('users-data');
+  getCharacters(): Observable<Character[]> {
+    const stateKey = makeStateKey<Character[]>('characters-data');
 
     // Si estamos en el navegador, obtener del Transfer State
     if (isPlatformBrowser(this.platformId)) {
@@ -28,19 +26,17 @@ export class ServicioService {
       return of(cachedData);
     } else {
       // Estamos en el servidor - hacer petición HTTP y guardar
-      console.log('SERVIDOR: Haciendo petición HTTP');
-      return this.http.get<any>('https://api.ejemplo.com/users').pipe(
-        map((res: any) => {
-          const data = ('data' in res ? res.data : res);
+      console.log('SERVIDOR: Haciendo petición HTTP a Dragon Ball API');
+      return this.http.get<CharactersResponse>(this.apiUrl).pipe(
+        map((res) => {
+          const data = res.items; // Extraemos solo el array de personajes
           console.log('SERVIDOR: Guardando en Transfer State');
           this.transferState.set(stateKey, data);
           return data;
         }),
-        catchError(() => of([] as User[]))
+        catchError(() => of([]))
       );
     }
   }
-  
 
-  
 }
